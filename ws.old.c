@@ -4,10 +4,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#define GRID_ROWS 14
-#define GRID_COLS 10
+#define GRID_ROWS 7
+#define GRID_COLS 7
 #define GRID_DEPTH 2
-#define WORDS_LENGTH 9
+#define WORDS_LENGTH 8
 #define MAX_WORD_LENGTH 10
 typedef int bool;
 #define true 1
@@ -25,7 +25,7 @@ typedef struct {
 
 // Puzzle grid
 char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH];
-char *directions[] = {"dl", "ur", "l", "r", "ul", "d", "u", "dr"};
+char *directions[] = {"u", "d", "l", "r", "ul", "ur", "dl", "dr"};
 
 // Number of words placed
 int words_placed = 0;
@@ -38,11 +38,8 @@ int used_words[WORDS_LENGTH] = {0};
 // including them in other languages
 
 //  Words to be placed
-char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {"FOOL",     "CASTLING", "KING",
-
-                                             "ATTACKER", "SWORD",    "SHIELD",
-
-                                             "KNIGHT",   "DRAGON",   "FAIRY"};
+char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {
+    "FOOL", "CASTLING", "KING", "SWORD", "SHIELD", "KNIGHT", "DRAGON", "FAIRY"};
 
 /* char words[WORDS_LENGTH][MAX_WORD_LENGTH] = { */
 /* "FOOL", "COOL", "TOOL", "POOL", "NOODLE", "MOON", "COON", "RACOON"}; */
@@ -281,7 +278,7 @@ possibilities get_all_possible(char *word) {
 char *eraser(int length) {
   char *eraser = (char *)malloc((length + 1) * sizeof(char));
   for (int i = 0; i < length; i++) {
-    eraser[i] = '0';
+    eraser[i] = 'X';
   }
   eraser[length] = '\0';
   return eraser;
@@ -319,6 +316,14 @@ void reset_used_words() {
     used_words[i] = 0;
   } while (i);
 }
+/* void shuffle_dir(char *dirs[8]) { */
+/*   for (int i = 0; i < 8; i++) { */
+/*     int rand_index = random_number(8); */
+/*     char *temp = dirs[rand_index]; */
+/*     dirs[rand_index] = dirs[i]; */
+/*     dirs[i] = temp; */
+/*   } */
+/* } */
 
 void shuffle_dir(char *dirs[8]) {
   int i = 8;
@@ -360,11 +365,6 @@ bool solve(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH],
            int index) {
   print_grid(grid);
   print_used();
-  printf("Index: %i", index);
-
-  /* if (index > WORDS_LENGTH) { */
-  /*   printf("We are faulting!!!!!!!!"); */
-  /* } */
   if (is_all_placed(used_words)) {
     printf("Completed Wordsearch: \n");
     print_grid(grid);
@@ -374,14 +374,10 @@ bool solve(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH],
   int row;
   int col;
   char *word = words[index];
-
-  // For erasing the words with '0's
   char *word_eraser = eraser(strlen(word));
-
   /*
-    Array of arrays containing all the
-    different coordinates. We can easily
-    shuffle this array.
+    Array of all the different coordinates.
+    We can easily shuffle this array for the backtracking.
   */
   int pos[GRID_ROWS * GRID_COLS][2];
   int pos_length = GRID_ROWS * GRID_COLS;
@@ -393,106 +389,49 @@ bool solve(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH],
       pos_index++;
     }
   }
-  /* Shuffle directions and possibilities */
+  /* printf("Before Shuffle\n"); */
+  /* print_pos(pos); */
   shuffle_pos(pos);
-  /* shuffle_dir(directions); */
-  printf("Shuffled dir:\n");
-  for (int i = 0; i < 8; i++) {
-    printf("%s ", directions[i]);
-  }
-  printf("\n");
-  /* Main backtracking algo */
-  int i = pos_length;
-  do {
-    i--;
-    row = pos[i][0];
-    col = pos[i][1];
-    for (int k = 0; k < 8; k++) {
-      if (check_space(word, directions[k], row, col, 0)) {
-        place_word(words[index], 0, row, col, directions[k], grid);
-        used_words[index] = 1;
-        if (solve(grid, words, used_words, index + 1)) {
-          return true;
-        }
-        place_word(word_eraser, 0, row, col, directions[k], grid);
-        used_words[index] = 0;
-      }
-    }
-  } while (i);
+  shuffle_dir(directions);
+  /* printf("After Shuffle\n"); */
+  /* print_pos(pos); */
 
-  /* for (int i = 0; i < GRID_ROWS; i++) { */
-  /*   for (int j = 0; j < GRID_COLS; j++) { */
-  /*     for (int k = 0; k < 8; k++) { */
-  /*       if (check_space(word, directions[k], i, j, 0)) { */
-  /*         place_word(words[index], 0, i, j, directions[k], grid); */
-  /*         used_words[index] = 1; */
-  /*         if (solve(grid, words, used_words, index + 1)) { */
-  /*           return true; */
-  /*         } */
-  /*         place_word(word_eraser, 0, i, j, directions[k], grid); */
-  /*         free(word_eraser); */
-  /*         used_words[index] = 0; */
+  /* int i = pos_length; */
+  /* do { */
+  /*   i--; */
+  /*   row = pos[i][0]; */
+  /*   col = pos[i][1]; */
+  /*   for (int k = 0; k < 8; k++) { */
+  /*     if (check_space(word, directions[k], row, col, 0)) { */
+  /*       place_word(words[index], 0, row, col, directions[k], grid); */
+  /*       used_words[index] = 1; */
+  /*       if (solve(grid, words, used_words, index + 1)) { */
+  /*         return true; */
   /*       } */
+  /*       place_word(word_eraser, 0, row, col, directions[k], grid); */
+  /*       free(word_eraser); */
+  /*       used_words[index] = 0; */
   /*     } */
   /*   } */
-  /* } */
-  free(word_eraser);
+  /* } while (pos_length); */
+  /**/
+  for (int i = 0; i < GRID_ROWS; i++) {
+    for (int j = 0; j < GRID_COLS; j++) {
+      for (int k = 0; k < 8; k++) {
+        if (check_space(word, directions[k], i, j, 0)) {
+          place_word(words[index], 0, i, j, directions[k], grid);
+          used_words[index] = 1;
+          if (solve(grid, words, used_words, index + 1)) {
+            return true;
+          }
+          place_word(word_eraser, 0, i, j, directions[k], grid);
+          free(word_eraser);
+          used_words[index] = 0;
+        }
+      }
+    }
+  }
   return false;
-}
-
-void solve2(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH],
-            char words[WORDS_LENGTH][MAX_WORD_LENGTH], int *used_words) {
-
-  if (is_all_placed(used_words)) {
-    printf("Completed Wordsearch: \n");
-    print_grid(grid);
-    return;
-  }
-
-  int row;
-  int col;
-  char *direction;
-  char *word = random_word(words, used_words);
-  // Index so we can mark the word as used or not on the used_words array */
-  int word_index = find_word_index(word);
-
-  // Get a random word
-
-  // Char of the same length as word containing 0's
-  char *word_eraser = eraser(strlen(word));
-
-  // Get all possible word placements
-  possibilities poss = get_all_possible(word);
-
-  // Get random possibility */
-  int poss_position = random_number(poss.length);
-  printf("direction: %s", poss.directions[poss_position]);
-  direction = poss.directions[poss_position];
-  row = poss.coordinates[poss_position][0];
-  col = poss.coordinates[poss_position][1];
-
-  // Place the word in a random possibilitiy */
-  place_word(word, 0, row, col, direction, grid);
-  // Mark the word as used */
-  used_words[word_index] = 1;
-  words_placed++;
-
-  print_grid(grid);
-
-  // If we reach a deadend, restart */
-  if (!any_possible() && !is_all_placed(used_words)) {
-    printf("There is not any more possibilities in recurse \n");
-    reset_used_words();
-    initialize_grid();
-  }
-
-  // Recurse
-  solve2(grid, words, used_words);
-
-  // Backtrack - Refill with X's
-  place_word(word_eraser, 0, row, col, direction, grid);
-  used_words[word_index] = 0;
-  words_placed--;
 }
 
 int main() {
@@ -505,34 +444,23 @@ int main() {
   /* grid[2][2][0] = 'X'; */
   /* grid[3][3][0] = 'X'; */
 
-  /* place_word("COOL", 0, 0, 0, "d", grid); */
-  /* char *word_eraser = eraser(strlen("COOl")); */
-  /* place_word(word_eraser, 0, 0, 0, "d", grid); */
-  /* print_grid(grid); */
-  /* if (check_space("COOL", "dr", 0, 0, 0)) { */
-  /*   printf("There is space"); */
-  /* } else { */
-  /*   printf("There is no space"); */
-  /* } */
-
   solve(grid, words, used_words, 0);
-  /* solve2(grid, words, used_words); */
   // Print original array
-  /* printf("Original array:\n"); */
-  /* for (int i = 0; i < 8; i++) { */
-  /*   printf("%s ", directions[i]); */
-  /* } */
-  /* printf("\n"); */
-  /**/
-  /* // Shuffle the directions array */
-  /* shuffle_dir(directions); */
-  /**/
-  /* // Print shuffled array */
-  /* printf("Shuffled array:\n"); */
-  /* for (int i = 0; i < 8; i++) { */
-  /*   printf("%s ", directions[i]); */
-  /* } */
-  /* printf("\n"); */
+  printf("Original array:\n");
+  for (int i = 0; i < 8; i++) {
+    printf("%s ", directions[i]);
+  }
+  printf("\n");
+
+  // Shuffle the directions array
+  shuffle_dir(directions);
+
+  // Print shuffled array
+  printf("Shuffled array:\n");
+  for (int i = 0; i < 8; i++) {
+    printf("%s ", directions[i]);
+  }
+  printf("\n");
   /* possibilities poss = get_all_possible("CO"); */
   /* print_grid(grid); */
   /* printf("%i", poss.length); */
