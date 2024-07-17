@@ -4,10 +4,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#define GRID_ROWS 10
-#define GRID_COLS 10
+#define GRID_ROWS 4
+#define GRID_COLS 4
 #define GRID_DEPTH 2
-#define WORDS_LENGTH 8
+#define WORDS_LENGTH 7
 #define MAX_WORD_LENGTH 10
 typedef int bool;
 #define true 1
@@ -38,15 +38,19 @@ int used_words[WORDS_LENGTH] = {0};
 // including them in other languages
 
 //  Words to be placed
-char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {
-    "FOOL", "CASTLING", "KING", "SWORD", "SHIELD", "KNIGHT", "DRAGON", "FAIRY"};
+/* char words[WORDS_LENGTH][MAX_WORD_LENGTH] = { */
+/*     "FOOL", "CASTLING", "KING", "SWORD", "SHIELD", "KNIGHT", "DRAGON",
+ * "FAIRY"}; */
 
 /* char words[WORDS_LENGTH][MAX_WORD_LENGTH] = { */
 /* "FOOL", "COOL", "TOOL", "POOL", "NOODLE", "MOON", "COON", "RACOON"}; */
 /* char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {"TOOL", "FOOL", "COOL", "LOL"};
  */
-/* char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {"AAAA", "BBBB", "CCCC", "DDDD"};
- */
+char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {"AAAA", "BBBB", "CCCC", "DDDD"};
+
+/* char words[WORDS_LENGTH][MAX_WORD_LENGTH] = {"COOL",  "FOOL",  "TOOL",
+ * "MOOL", */
+/*                                              "STOOL", "DROOL", "POOL"}; */
 
 // Possible directions a word can move
 
@@ -65,6 +69,12 @@ void print_direct(possibilities *poss) {
     printf("row: %i, col: %i, direction: %s", poss->coordinates[i][0],
            poss->coordinates[i][1], directions[i]);
     printf("\n");
+  }
+}
+
+void print_used() {
+  for (int i = 0; i < WORDS_LENGTH; i++) {
+    printf("%i ", used_words[i]);
   }
 }
 
@@ -284,73 +294,182 @@ int find_word_index(char *word) {
   return index;
 }
 
-void solve(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH],
-           char words[WORDS_LENGTH][MAX_WORD_LENGTH], int *used_words) {
+bool any_possible() {
+  int i = WORDS_LENGTH;
+  do {
+    i--;
+    if (used_words[i] == 1) {
+      continue;
+    }
+    if (get_all_possible(words[i]).length != 0) {
+      return true;
+    }
 
+  } while (i);
+  return false;
+}
+
+void reset_used_words() {
+  int i = WORDS_LENGTH;
+  do {
+    i--;
+    used_words[i] = 0;
+  } while (i);
+}
+
+void shuffle_pos(int pos[GRID_ROWS * GRID_COLS][2]) {
+  int i = GRID_ROWS * GRID_COLS;
+  do {
+    i--;
+    int temp[2];
+    int rand = random_number(GRID_ROWS * GRID_COLS);
+    temp[0] = pos[rand][0];
+    temp[1] = pos[rand][1];
+    pos[rand][0] = pos[i][0];
+    pos[rand][1] = pos[i][1];
+    pos[i][0] = temp[0];
+    pos[i][0] = temp[1];
+
+  } while (i);
+}
+
+// Print the shuffled array
+void print_pos(int pos[GRID_ROWS * GRID_COLS][2]) {
+  for (int i = 0; i < GRID_ROWS * GRID_COLS; i++) {
+    printf("pos[%d] = [%d, %d]\n", i, pos[i][0], pos[i][1]);
+  }
+}
+
+bool solve(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH],
+           char words[WORDS_LENGTH][MAX_WORD_LENGTH], int *used_words,
+           int index) {
+  print_grid(grid);
+  print_used();
   if (is_all_placed(used_words)) {
+    printf("Completed Wordsearch: \n");
     print_grid(grid);
-    return;
+    return true;
   }
 
-  int row;
-  int col;
-  char *direction;
-  char *word = random_word(words, used_words);
-  // Index so we can mark the word as used or not on the used_words array
-  int word_index = find_word_index(word);
-
-  // Get a random word
-
-  // Char of the same length as word containing X's
+  char *word = words[index];
   char *word_eraser = eraser(strlen(word));
+  /*
+    Array of all the different coordinates.
+    We can easily shuffle this array for the backtracking.
+  */
+  int pos[GRID_ROWS * GRID_COLS][2];
+  int pos_index = 0;
+  for (int y = 0; y < GRID_ROWS; y++) {
+    for (int x = 0; x < GRID_COLS; x++) {
+      pos[pos_index][0] = y;
+      pos[pos_index][1] = x;
+      pos_index++;
+    }
+  }
+  printf("Before Shuffle\n");
+  print_pos(pos);
+  shuffle_pos(pos);
+  printf("After Shuffle\n");
+  print_pos(pos);
 
-  // Get all possible word placements
-  possibilities poss = get_all_possible(word);
-
-  // poss.directions and poss.coordinates corolate with eachother so
-  // directions[0] and coordinates[0][0] + coordinates[0][1] will give us data
-  // like "d" 0 , 0 meaning at the position 0 , 0 the word can be placed
-  // downwards
-
-  // Get random possibility
-  int poss_position = random_number(poss.length);
-  direction = poss.directions[poss_position];
-  row = poss.coordinates[poss_position][0];
-  col = poss.coordinates[poss_position][1];
-
-  // The following is where I dont really know what I'm doing.
-  // I'm getting the result I want, mostly, but one thing is messing we me.
-  // If I have a 4x4 grid, and I put in "AAAA" , "BBBB" , "CCCC" , "DDDD" most
-  // of the time it will output the grid with them all in a row horizontal or
-  // vertical but sometimes I will get a segment fault and I can only assume
-  // that is because the first word placed was on a diagonal and so the rest of
-  // the words cant be placed. But if my backtracker was working properly it
-  // should just erase that first diagonal one and try with a vert or horiz part
-  // of me thinks the backtracker needs to erase not only itself but the word
-  // placed just before it too. Honestly I just winged it. I would consider this
-  // just barely working. Was hoping we could go over the core algo together and
-  // find something sweeter. Should have all the helper functions we need
-
-  // Place the word in a random possibilitiy
-  place_word(word, 0, row, col, direction, grid);
-  // Mark the word as used
-  used_words[word_index] = 1;
-
-  // Recurse
-  solve(grid, words, used_words);
-
-  // Backtrack - Refill with X's
-  place_word(word_eraser, 0, row, col, direction, grid);
-  used_words[word_index] = 0;
+  for (int i = 0; i < GRID_ROWS; i++) {
+    for (int j = 0; j < GRID_COLS; j++) {
+      for (int k = 0; k < 8; k++) {
+        if (check_space(word, directions[k], i, j, 0)) {
+          place_word(words[index], 0, i, j, directions[k], grid);
+          used_words[index] = 1;
+          if (solve(grid, words, used_words, index + 1)) {
+            return true;
+          }
+          place_word(word_eraser, 0, i, j, directions[k], grid);
+          free(word_eraser);
+          used_words[index] = 0;
+        }
+      }
+    }
+  }
+  return false;
 }
+
+/* void solve(char grid[GRID_ROWS][GRID_COLS][GRID_DEPTH], */
+/*            char words[WORDS_LENGTH][MAX_WORD_LENGTH], int *used_words) { */
+/**/
+/*   if (is_all_placed(used_words)) { */
+/*     printf("Completed Wordsearch: \n"); */
+/*     print_grid(grid); */
+/*     return; */
+/*   } */
+/**/
+/*   int row; */
+/*   int col; */
+/*   char *direction; */
+/*   char *word = random_word(words, used_words); */
+/*   // Index so we can mark the word as used or not on the used_words array */
+/*   int word_index = find_word_index(word); */
+/**/
+/*   // Get a random word */
+/**/
+/*   // Char of the same length as word containing 0's */
+/*   char *word_eraser = eraser(strlen(word)); */
+/**/
+/*   // Get all possible word placements */
+/*   possibilities poss = get_all_possible(word); */
+/**/
+/*   // poss.directions and poss.coordinates corolate with eachother so */
+/*   // directions[0] and coordinates[0][0] + coordinates[0][1] will give us
+ * data */
+/*   // like "d" 0 , 0 meaning at the position 0 , 0 the word can be placed */
+/*   // downwards */
+/**/
+/*   // Get random possibility */
+/*   int poss_position = random_number(poss.length); */
+/*   printf("direction: %s", poss.directions[poss_position]); */
+/*   direction = poss.directions[poss_position]; */
+/*   row = poss.coordinates[poss_position][0]; */
+/*   col = poss.coordinates[poss_position][1]; */
+/**/
+/*   // Place the word in a random possibilitiy */
+/*   place_word(word, 0, row, col, direction, grid); */
+/*   // Mark the word as used */
+/*   used_words[word_index] = 1; */
+/*   words_placed++; */
+/**/
+/*   print_grid(grid); */
+/**/
+/*   // If we reach a deadend, restart */
+/*   if (!any_possible() && !is_all_placed(used_words)) { */
+/*     printf("There is not any more possibilities in recurse \n"); */
+/*     reset_used_words(); */
+/*     initialize_grid(); */
+/*   } */
+
+// Recurse
+/* solve(grid, words, used_words); */
+
+// Backtrack - Refill with X's
+/* place_word(word_eraser, 0, row, col, direction, grid); */
+/* used_words[word_index] = 0; */
+/* words_placed--; */
+/* } */
 
 int main() {
   srand(time(NULL));
 
   // Initialize grid with "0"
   initialize_grid();
+  /* grid[0][0][0] = 'X'; */
+  /* grid[1][1][0] = 'X'; */
+  /* grid[2][2][0] = 'X'; */
+  /* grid[3][3][0] = 'X'; */
 
-  solve(grid, words, used_words);
-
+  solve(grid, words, used_words, 0);
+  /* possibilities poss = get_all_possible("CO"); */
+  /* print_grid(grid); */
+  /* printf("%i", poss.length); */
+  /* if (any_possible()) { */
+  /*   printf("There are possibilities"); */
+  /* } else { */
+  /*   printf("There are NOT possibilities"); */
+  /* } */
   return 0;
 }
