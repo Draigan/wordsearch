@@ -1,5 +1,5 @@
   <p align="center">
-   <img style="max-width: 400px;" src="https://github.com/Draigan/wordsearch/example.gif" width="320" />
+   <img style="max-width: 400px;" src="https://github.com/Draigan/wordsearch/blob/main/example.gif?raw=true" width="320" />
 </p>
 
 # Wordsearch Generator
