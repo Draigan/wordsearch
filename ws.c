@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #define GRID_ROWS 12
-#define GRID_COLS 12
+#define GRID_COLS 8
 #define GRID_DEPTH 2
 #define WORDS_LENGTH 9
 #define MAX_WORD_LENGTH 10
@@ -57,37 +57,28 @@ void initialize_grid() {
  * Returns a the modified coordinates for a direction
  * */
 int *get_direction(char *direction, int row, int col) {
-  if (strcmp(direction, "u") == 0) {
-    row -= 1;
-  }
-  if (strcmp(direction, "d") == 0) {
-    row += 1;
-  }
-  if (strcmp(direction, "l") == 0) {
-    col -= 1;
-  }
-  if (strcmp(direction, "r") == 0) {
-    col += 1;
-  }
-  if (strcmp(direction, "ul") == 0) {
-    row -= 1;
-    col -= 1;
-  }
-  if (strcmp(direction, "ur") == 0) {
-    row -= 1;
-    col += 1;
-  }
-  if (strcmp(direction, "dl") == 0) {
-    row += 1;
-    col -= 1;
-  }
-  if (strcmp(direction, "dr") == 0) {
-    row += 1;
-    col += 1;
+
+  int *directions; 
+  char *s;
+
+  for (s = direction; *s; s++){
+    switch(*s){
+      case 'u':
+        row -= 1;
+        break;
+      case 'd':
+        row += 1;
+        break;
+      case 'l':
+        col -= 1;
+        break;
+      case 'r':
+        col += 1;
+        break;
+    }
   }
 
-  int *directions = (int *)malloc(2 * sizeof(int));
-  if (directions == NULL) {
+  if (NULL == (directions = (int *)malloc(2 * sizeof(int)))) {
     fprintf(stderr, "Memory allocation failed\n");
     exit(1);
   }
